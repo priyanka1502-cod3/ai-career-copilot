@@ -147,6 +147,37 @@ def split_sections(text: str) -> dict[str, list[str]]:
 
     return sections
 
+def extract_summary(text: str) -> str | None:
+    lines = [line.strip() for line in text.splitlines()]
+
+    start_index = None
+    end_index = None
+
+    for index, line in enumerate(lines):
+        normalized = normalize_heading(line)
+
+        if normalized in {"summary", "professional summary", "profile"}:
+            start_index = index + 1
+            continue
+
+        if start_index is not None and normalized in {
+            "experience",
+            "professional experience",
+            "work experience",
+        }:
+            end_index = index
+            break
+
+    if start_index is None:
+        return None
+
+    summary_lines = lines[start_index:end_index]
+
+    summary = " ".join(
+        line for line in summary_lines if line
+    ).strip()
+
+    return summary or None
 
 def build_candidate_profile(text: str) -> CandidateProfile:
     sections = split_sections(text)
@@ -156,6 +187,7 @@ def build_candidate_profile(text: str) -> CandidateProfile:
         email=extract_email(text),
         phone=extract_phone(text),
         location=extract_location(text),
+        summary=extract_summary(text),
         skills=extract_skills(text),
         education=sections["education"],
         experience=sections["experience"],
